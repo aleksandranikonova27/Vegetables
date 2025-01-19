@@ -53,7 +53,7 @@ def start_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
+                return  
         pygame.display.flip()
         clock.tick(FPS)
 
