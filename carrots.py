@@ -29,8 +29,8 @@ def terminate():
 def start_screen():
     intro_text = ["ЗАСТАВКА", "",
                   "Правила игры:",
-                  "Если в правилах несколько строк,",
-                  "приходится выводить их построчно"]
+                  "Здесь будут правила",
+                  ]
 
     fon = pygame.image.load("pictures_for_my_project\\fon1.jpg")
     fon = pygame.transform.scale(fon, size)
@@ -53,15 +53,15 @@ def start_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return  
+                return
         pygame.display.flip()
         clock.tick(FPS)
 
 
-class Carrot(pygame.sprite.Sprite):
+class Vegeteble(pygame.sprite.Sprite):
     def __init__(self, *group):
         super().__init__(*group)
-        self.image_src = carrots_pics[randrange(1, 6)]
+        self.ind_score = 1
         self.image = self.image_src.copy()
         self.rect = self.image.get_rect()
         self.rect.x = randrange(width)
@@ -70,6 +70,7 @@ class Carrot(pygame.sprite.Sprite):
 
     def update(self, *args):
         global score
+
         self.rect.y += self.speed
         if self.rect.y > height:
             self.kill()
@@ -79,55 +80,28 @@ class Carrot(pygame.sprite.Sprite):
             return False
         if pygame.sprite.spritecollideany(self, player_sprite):
             self.kill()
-            score += 1
+            score += self.ind_score
 
 
-class Cabbage(pygame.sprite.Sprite):
+class Carrot(Vegeteble):
     def __init__(self, *group):
+        self.image_src = load_image(f"carrot.png", -1, (30, 30))
         super().__init__(*group)
-        self.image_src = cabbage_pics[randrange(1, 6)]
-        self.image = self.image_src.copy()
-        self.rect = self.image.get_rect()
-        self.rect.x = randrange(width)
-        self.rect.y = randrange(height)
-        self.speed = randrange(1, 5)
-
-    def update(self, *args):
-        global score
-        self.rect.y += self.speed
-        if self.rect.y > height:
-            self.kill()
-        if args and args[0].type == pygame.MOUSEBUTTONDOWN:  #
-            return True
-        elif args and args[0].type == pygame.KEYDOWN:  #
-            return False
-        if pygame.sprite.spritecollideany(self, player_sprite):
-            self.kill()
-            score += 10
+        self.ind_score = 5
 
 
-class Pumpkin(pygame.sprite.Sprite):
+class Cabbage(Vegeteble):
     def __init__(self, *group):
+        self.image_src = load_image(f"cabbage.jpg", -1, (60, 60))
         super().__init__(*group)
-        self.image_src = pumpkin_pics[randrange(1, 6)]
-        self.image = self.image_src.copy()
-        self.rect = self.image.get_rect()
-        self.rect.x = randrange(width)
-        self.rect.y = randrange(height)
-        self.speed = randrange(1, 5)
+        self.ind_score = 10
 
-    def update(self, *args):
-        global score
-        self.rect.y += self.speed
-        if self.rect.y > height:
-            self.kill()
-        if args and args[0].type == pygame.MOUSEBUTTONDOWN:  #
-            return True
-        elif args and args[0].type == pygame.KEYDOWN:  #
-            return False
-        if pygame.sprite.spritecollideany(self, player_sprite):
-            self.kill()
-            score += 20
+
+class Pumpkin(Vegeteble):
+    def __init__(self, *group):
+        self.image_src = load_image(f"pumpkin.jpg", -1, (80, 80))
+        super().__init__(*group)
+        self.ind_score = 20
 
 
 class Player(pygame.sprite.Sprite):
@@ -167,19 +141,8 @@ if __name__ == '__main__':
     all_sprites.add(player)
     player_sprite.add(player)
     score = 0
+    paused = False
     FPS = 50
-
-    carrots_pics = []
-    for i in range(6):
-        carrots_pics.append(load_image(f"carrot.png", -1, (30, 30)))
-
-    cabbage_pics = []
-    for i in range(6):
-        cabbage_pics.append(load_image(f"cabbage.jpg", -1, (60, 60)))
-
-    pumpkin_pics = []
-    for i in range(6):
-        pumpkin_pics.append(load_image(f"pumpkin.jpg", -1, (80, 80)))
     start_screen()
     font = pygame.font.SysFont("Verdana", 15)
     screen.blit(background_image, (0, 0))
@@ -190,17 +153,17 @@ if __name__ == '__main__':
         Cabbage(all_sprites)
     for i in range(10):
         Pumpkin(all_sprites)
-    running = False
+    running = True
     clock = pygame.time.Clock()
-    while not running:
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = True
-            # if event.type == pygame.MOUSEBUTTONDOWN:
-            #     running = all_sprites.update(event)
-            # if event.type == pygame.KEYDOWN:
-            #     if event.key == pygame.K_RETURN:
-            #         running = all_sprites.update(event)
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    running = False
 
         screen.blit(background_image, (0, 0))
         score_text = font.render("Счёт: " + str(score), True, 'black')
