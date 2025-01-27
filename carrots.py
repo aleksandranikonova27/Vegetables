@@ -5,12 +5,15 @@ import sys
 
 SCORE = 0
 LEVEL = 0
-SCORE_CONST = [50, 250, 700, 1300, 2000]
+SCORE_CONST = [10, 250, 700, 1300, 2000]
+VEG_SCORE = [5, 10, 20]
 BLACK = 'black'
 INTRO_TEXT = ["ЗАСТАВКА", "",
               "Правила игры",
               "Если в правилах несколько строк,",
               "приходится выводить их построчно"]
+BACKGROUNDS = [pygame.image.load("pictures_for_my_project\\background1.jpg")]
+PAUSED = False
 
 
 def load_image(name, color_key=None, *sprite_size):
@@ -78,26 +81,26 @@ def new_level():
 class Vegetable(pygame.sprite.Sprite):
     def __init__(self, ind, *group):
         super().__init__(*group)
-        self.ind_score = 1
+        self.ind_score = VEG_SCORE[ind]
         self.image = vegetables_sp[ind]
         self.rect = self.image.get_rect()
-        self.rect.x = randrange(width)
-        self.rect.y = randrange(height)
+        self.rect.x = randrange(20, width - 50)
+        self.rect.y = 0
         self.speed = randrange(1, 5)
 
     def update(self, *args):
         global SCORE
-
-        self.rect.y += self.speed
-        if self.rect.y > height:
-            self.kill()
-        if args and args[0].type == pygame.MOUSEBUTTONDOWN:  #
-            return True
-        elif args and args[0].type == pygame.KEYDOWN:  #
-            return False
-        if pygame.sprite.spritecollideany(self, player_sprite):
-            self.kill()
-            SCORE += self.ind_score
+        if not PAUSED:
+            self.rect.y += self.speed
+            if self.rect.y > height:
+                self.kill()
+            if args and args[0].type == pygame.MOUSEBUTTONDOWN:  #
+                return True
+            elif args and args[0].type == pygame.KEYDOWN:  #
+                return False
+            if pygame.sprite.spritecollideany(self, player_sprite):
+                self.kill()
+                SCORE += self.ind_score
 
 
 class Player(pygame.sprite.Sprite):
@@ -112,16 +115,17 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         self.speedx = 0
-        keystate = pygame.key.get_pressed()
-        if keystate[pygame.K_LEFT]:
-            self.speedx = -8
-        if keystate[pygame.K_RIGHT]:
-            self.speedx = 8
-        self.rect.x += self.speedx
-        if self.rect.right > width:
-            self.rect.right = width
-        if self.rect.left < 0:
-            self.rect.left = 0
+        if not PAUSED:
+            keystate = pygame.key.get_pressed()
+            if keystate[pygame.K_LEFT]:
+                self.speedx = -8
+            if keystate[pygame.K_RIGHT]:
+                self.speedx = 8
+            self.rect.x += self.speedx
+            if self.rect.right > width:
+                self.rect.right = width
+            if self.rect.left < 0:
+                self.rect.left = 0
 
 
 if __name__ == '__main__':
@@ -129,7 +133,7 @@ if __name__ == '__main__':
     size = width, height = 800, 600
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption("Морковки падают вниз")
-    background_image = pygame.image.load("pictures_for_my_project\\background1.jpg")
+    background_image = BACKGROUNDS[LEVEL-1]
     background_image = pygame.transform.scale(background_image, size)
     all_sprites = pygame.sprite.Group()
     player_sprite = pygame.sprite.Group()
@@ -137,22 +141,18 @@ if __name__ == '__main__':
     all_sprites.add(player)
     player_sprite.add(player)
     SCORE_CHECK = pygame.USEREVENT + 1
-    SCORE_CHECK = pygame.event.Event(SCORE_CHECK)
-    pygame.event.post(SCORE_CHECK)
     pygame.time.set_timer(SCORE_CHECK, 10)
     GAME = pygame.USEREVENT + 2
-    GAME = pygame.event.Event(GAME)
-    pygame.event.post(GAME)
+    pygame.time.set_timer(GAME, 1500)
     vegetables_sp = [load_image(f"carrot.png", -1, (30, 30)),
                      load_image(f"cabbage.jpg", -1, (60, 60)),
                      load_image(f"pumpkin.jpg", -1, (80, 80))]
 
-    paused = False
     FPS = 50
     massage_screen("pictures_for_my_project\\fon1.jpg", BLACK, INTRO_TEXT)
     font = pygame.font.SysFont("Verdana", 15)
     screen.blit(background_image, (0, 0))
-
+    new_level()
     running = True
     clock = pygame.time.Clock()
     while running:
@@ -161,17 +161,22 @@ if __name__ == '__main__':
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    paused = True
-            if event.type == pygame.SCORE_CHECK:
-                if SCORE >= SCORE_CONST[LEVEL]:
+                    PAUSED = not PAUSED
+                    if PAUSED:
+                        pygame.time.set_timer(SCORE_CHECK, 0)
+                        pygame.time.set_timer(GAME, 0)
+                    else:
+                        pygame.time.set_timer(SCORE_CHECK, 10)
+                        pygame.time.set_timer(GAME, 1500)
+            if event.type == SCORE_CHECK:
+                if SCORE == SCORE_CONST[LEVEL - 1]:
                     new_level()
-            if event.type == pygame.GAME:
-                while not paused:
-                    for ind in range(LEVEL):
-                        Vegetable(ind, all_sprites)
+            if event.type == GAME:
+                if not PAUSED:
+                    Vegetable(randrange(LEVEL), all_sprites)
 
         screen.blit(background_image, (0, 0))
-        score_text = font.render("Счёт: " + str(SCORE), True, 'black')
+        score_text = font.render(f"Счёт: {SCORE} уровень: {LEVEL}", True, 'black')
         screen.blit(score_text, (10, 10))
         all_sprites.draw(screen)
         all_sprites.update()
