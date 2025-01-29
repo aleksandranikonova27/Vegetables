@@ -17,6 +17,7 @@ INTRO_TEXT = ["ЗАСТАВКА", "",
 RULE_TEXT = ['ПРАВИЛА:', '', '']
 BACKGROUNDS = [pygame.image.load("pictures_for_my_project\\background1.jpg")]
 PAUSED = False
+LIVES = 3
 
 
 def load_image(name, color_key=None, *sprite_size):
@@ -79,7 +80,7 @@ def game_over(cur_score):
     record_score, date = inf1[0], inf1[1]
     if cur_score > record_score:
         txt = ['ПОЗДРАВЛЯЕМ! ВЫ ПОБИЛИ ПРОШЛЫЙ РЕКОРД!', f'Прошлый рекорд: {record_score}, был установлен: {date}',
-               f'Новый рекорд: {cur_score}
+               f'Новый рекорд: {cur_score}',
                f'Счёт: {cur_score}']
         cur.execute(f"UPDATE main SET score='{cur_score}', record_time='{datetime.date.today()}' WHERE id='1'")
     else:
@@ -89,6 +90,14 @@ def game_over(cur_score):
 
 
 fon_sp = []
+
+
+def draw_lives(srf, x, y, lives, image):
+    for i in range(lives):
+        rect = image.get_rect()
+        rect.x = x + 50 * i
+        rect.y = y
+        srf.blit(image, rect)
 
 
 def new_level():
@@ -108,14 +117,13 @@ class Vegetable(pygame.sprite.Sprite):
 
     def update(self, *args):
         global SCORE
+        global LIVES
         if not PAUSED:
             self.rect.y += self.speed
             if self.rect.y > height:
                 self.kill()
-            if args and args[0].type == pygame.MOUSEBUTTONDOWN:  #
-                return True
-            elif args and args[0].type == pygame.KEYDOWN:  #
-                return False
+                LIVES = LIVES - 1
+
             if pygame.sprite.spritecollideany(self, player_sprite):
                 self.kill()
                 SCORE += self.ind_score
@@ -169,11 +177,10 @@ if __name__ == '__main__':
                      load_image(f"pumpkin.jpg", -1, (80, 80))]
 
     FPS = 50
-    massage_screen("pictures_for_my_project\\fon1.jpg", (50,50), BLACK, INTRO_TEXT)
+    massage_screen("pictures_for_my_project\\fon1.jpg", (50, 50), BLACK, INTRO_TEXT)
     font = pygame.font.SysFont("Verdana", 15)
     screen.blit(background_image, (0, 0))
     new_level()
-    running = True
     clock = pygame.time.Clock()
     while True:
         for event in pygame.event.get():
@@ -183,23 +190,25 @@ if __name__ == '__main__':
                 if event.key == pygame.K_SPACE:
                     PAUSED = not PAUSED
                     if PAUSED:
-                        pygame.time.set_timer(SCORE_CHECK, 0)
                         pygame.time.set_timer(GAME, 0)
                     else:
-                        pygame.time.set_timer(SCORE_CHECK, 10)
                         pygame.time.set_timer(GAME, 1500)
                 elif event.key == pygame.K_ESCAPE:
                     game_over(SCORE)
                     terminate()
                 elif event.key == pygame.K_r:
-                    massage_screen("pictures_for_my_project\\fon2.jpg", (50,50), BLACK, RULE_TEXT)
+                    massage_screen("pictures_for_my_project\\fon2.jpg", (50, 50), BLACK, RULE_TEXT)
             if event.type == GAME:
                 if not PAUSED:
                     Vegetable(randrange(LEVEL) % len(vegetables_sp), all_sprites)
+                if LIVES <= 0:
+                    game_over(SCORE)
+                    terminate()
         screen.blit(background_image, (0, 0))
         score_text = font.render(f"Счёт: {SCORE} уровень: {LEVEL}", True, 'black')
         screen.blit(score_text, (10, 10))
+        draw_lives(screen, width - 200, 20, LIVES, load_image('hurt.png', -1, (60, 60)))
         all_sprites.draw(screen)
         all_sprites.update()
         pygame.display.flip()
-        pygame.time.Clock().tick(60)
+        pygame.time.Clock().tick(70)
