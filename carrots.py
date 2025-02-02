@@ -7,15 +7,19 @@ import datetime
 
 SCORE = 0
 LEVEL = 0
-SCORE_CONST = [50, 250, 700, 730, 1000]
-VEG_SCORE = [5, 10, 20]
+SCORE_CONST = [50, 250, 300, 400, 500]
+VEG_SCORE = [5, 10, 20, 25, 30]
 BLACK = 'black'
 INTRO_TEXT = ["ЗАСТАВКА", "",
               "Нажмите R чтобы увидеть правила игры",
               "Нажмите пробел, чтобы поставить игру на паузу",
               "Нажмите Esc, чтобы выйти из игры"]
 RULE_TEXT = ['ПРАВИЛА:', '', '']
-BACKGROUNDS = [pygame.image.load("pictures_for_my_project\\background1.jpg")]
+BACKGROUNDS = [pygame.image.load("pictures_for_my_project\\background1.jpg"),
+               pygame.image.load("pictures_for_my_project\\background2.jpg"),
+               pygame.image.load("pictures_for_my_project\\background3.jpg"),
+               pygame.image.load("pictures_for_my_project\\background4.jpg"),
+               pygame.image.load("pictures_for_my_project\\background5.jpg")]
 PAUSED = False
 LIVES = 2
 
@@ -89,9 +93,6 @@ def game_over(cur_score):
     massage_screen("pictures_for_my_project\\result_fon.jpg", text_coord, BLACK, txt)
 
 
-fon_sp = []
-
-
 def draw_lives(srf, x, y, lives):
     for i in range(lives):
         rect = L_IM.get_rect()
@@ -133,24 +134,49 @@ class Vegetable(pygame.sprite.Sprite):
                     new_level()
 
 
+sheets = [pygame.image.load('pictures_for_my_project\\BunnyIdleF.png'),
+          pygame.image.load('pictures_for_my_project\\BunnyIdleL.png'),
+          pygame.image.load('pictures_for_my_project\\BunnyIdleR.png')]
+
+
 class Player(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, columns, rows):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((100, 60))
-        self.image.fill('red')
+        self.image = pygame.Surface((60, 60))
         self.rect = self.image.get_rect()
         self.rect.centerx = width / 2
         self.rect.bottom = height - 10
         self.speedx = 0
+        self.sheet_id = 0
+        self.frames = []
+        self.sheet = sheets[self.sheet_id]
+        self.cut_sheet(sheets[self.sheet_id], 10, 1)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(width / 2, height - 100)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
 
     def update(self):
         self.speedx = 0
         if not PAUSED:
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = self.frames[self.cur_frame]
             keystate = pygame.key.get_pressed()
             if keystate[pygame.K_LEFT]:
                 self.speedx = -8
+                self.sheet_id = 1
+
             if keystate[pygame.K_RIGHT]:
                 self.speedx = 8
+                self.sheet_id = 2
             self.rect.x += self.speedx
             if self.rect.right > width:
                 self.rect.right = width
@@ -163,11 +189,11 @@ if __name__ == '__main__':
     size = width, height = 800, 600
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption("Морковки падают вниз")
-    background_image = BACKGROUNDS[LEVEL - 1]
+    background_image = BACKGROUNDS[LEVEL]
     background_image = pygame.transform.scale(background_image, size)
     all_sprites = pygame.sprite.Group()
     player_sprite = pygame.sprite.Group()
-    player = Player()
+    player = Player(10, 1)
     all_sprites.add(player)
     player_sprite.add(player)
     SCORE_CHECK = pygame.USEREVENT + 1
@@ -176,7 +202,9 @@ if __name__ == '__main__':
     pygame.time.set_timer(GAME, 1500)
     vegetables_sp = [load_image(f"carrot.png", -1, (30, 30)),
                      load_image(f"cabbage.jpg", -1, (60, 60)),
-                     load_image(f"pumpkin.jpg", -1, (80, 80))]
+                     load_image(f"pumpkin.jpg", -1, (80, 80)),
+                     load_image(f"baklajan.jpg", -1, (70, 70)),
+                     load_image(f"kukuruza.jpg", -1, (50, 50))]
     L_IM = load_image('hurt.png', -1, (60, 60))
 
     FPS = 50
@@ -204,6 +232,9 @@ if __name__ == '__main__':
             if event.type == GAME:
                 if not PAUSED:
                     Vegetable(randrange(LEVEL) % len(vegetables_sp), all_sprites)
+                    background_image = pygame.transform.scale(BACKGROUNDS[LEVEL - 1], size)
+                    player.update()
+
                 if LIVES <= 0:
                     game_over(SCORE)
                     terminate()
